@@ -10,6 +10,7 @@ import { useT } from "@/lib/i18n/useT";
 
 const TABS = [
   { href: "/pda/receive", icon: "▼", th: "รับ", en: "Receive" },
+  { href: "/pda/qc", icon: "✔", th: "QC", en: "QC" },
   { href: "/pda/putaway", icon: "⇥", th: "จัดเก็บ", en: "Putaway" },
   { href: "/pda/pick", icon: "≋", th: "หยิบ", en: "Pick" },
   { href: "/pda/returns", icon: "↩", th: "คืน", en: "Returns" },

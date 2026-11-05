@@ -32,8 +32,6 @@ const NAV: NavGroup[] = [
     key: "nav.group.inbound",
     items: [
       { href: "/console/inbound", key: "nav.inbound", icon: "▼" },
-      { href: "/console/inbound/qc", key: "nav.qc", icon: "✓" },
-      { href: "/console/inbound/discrepancies", key: "nav.discrepancies", icon: "≠" },
     ],
   },
   {

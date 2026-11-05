@@ -159,6 +159,10 @@ export interface AsnLine {
 export interface Asn {
   id: ID;
   asnNo: string;
+  /** Set when the console admin approves the QC outcome. */
+  qcApproved?: boolean;
+  /** Set when the admin confirms putaway is complete and stock is live. */
+  putawayApproved?: boolean;
   poId: ID;
   supplierId: ID;
   expectedAt: ISODate;

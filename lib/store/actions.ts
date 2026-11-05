@@ -11,7 +11,12 @@ import {
   resolveDiscrepancy,
   submitQc,
 } from "../domain/inbound";
-import { cancelOrder, markPaid, retryOrder, syncOrders } from "../domain/orders";
+import {
+  cancelOrder,
+  markPaid,
+  retryOrder,
+  syncOrders,
+} from "../domain/orders";
 import {
   closePackSession,
   issueLabel,
@@ -38,7 +43,12 @@ import {
   returnIntake,
   returnScanItem,
 } from "../domain/returns";
-import { recoverOutbox, outboxBegin, outboxFinish, outboxRetry } from "../domain/outbox";
+import {
+  recoverOutbox,
+  outboxBegin,
+  outboxFinish,
+  outboxRetry,
+} from "../domain/outbox";
 import {
   createManifest,
   finishManifestScan,
@@ -57,12 +67,15 @@ import {
   shortPick,
 } from "../domain/waves";
 import { parseScan } from "../scan/parse";
+import { fail, ok } from "../domain/core";
 import type { Lang } from "../domain/types";
 import { replaceData, run, useWms, getData } from "./store";
 import { buildSeed } from "./seed";
 import { clearSignatures } from "./persist";
 
-type Args<F> = F extends (s: never, c: never, i: infer I) => unknown ? I : never;
+type Args<F> = F extends (s: never, c: never, i: infer I) => unknown
+  ? I
+  : never;
 
 const kindOf = (raw: string) => parseScan(raw).kind;
 
@@ -71,10 +84,13 @@ export const actions = {
   seedIfEmpty() {
     const d = getData();
     if (d.seeded && d.schemaVersion === 1) {
-      run((s) => {
-        recoverOutbox(s);
-        return { ok: true, data: undefined };
-      }, { notifyError: false });
+      run(
+        (s) => {
+          recoverOutbox(s);
+          return { ok: true, data: undefined };
+        },
+        { notifyError: false },
+      );
       return;
     }
     replaceData(buildSeed(nowISO(), d.settings.lang));
@@ -85,23 +101,35 @@ export const actions = {
     replaceData(buildSeed(nowISO(), lang));
   },
   setLang(lang: Lang) {
-    run((s) => {
-      s.settings.lang = lang;
-      return { ok: true, data: undefined };
-    }, { notifyError: false });
+    run(
+      (s) => {
+        s.settings.lang = lang;
+        return { ok: true, data: undefined };
+      },
+      { notifyError: false },
+    );
   },
-  setSetting<K extends "soundOn" | "vibrateOn" | "failOutboxNext">(key: K, value: boolean) {
-    run((s) => {
-      s.settings[key] = value;
-      return { ok: true, data: undefined };
-    }, { notifyError: false });
+  setSetting<K extends "soundOn" | "vibrateOn" | "failOutboxNext">(
+    key: K,
+    value: boolean,
+  ) {
+    run(
+      (s) => {
+        s.settings[key] = value;
+        return { ok: true, data: undefined };
+      },
+      { notifyError: false },
+    );
   },
   setCutoff(code: string, hm: string) {
-    run((s) => {
-      const c = s.settings.carriers.find((x) => x.code === code);
-      if (c) c.cutoffLocal = hm;
-      return { ok: true, data: undefined };
-    }, { notifyError: false });
+    run(
+      (s) => {
+        const c = s.settings.carriers.find((x) => x.code === code);
+        if (c) c.cutoffLocal = hm;
+        return { ok: true, data: undefined };
+      },
+      { notifyError: false },
+    );
   },
 
   /* --- inbound --- */
@@ -115,6 +143,42 @@ export const actions = {
     return run((s, c) => logDiscrepancy(s, c, input), {
       successText: { th: "บันทึกส่วนต่างแล้ว", en: "Discrepancy logged" },
     });
+  },
+  /** Admin confirms the QC outcome. The QC step stays in progress until this is pressed. */
+  approveQc(asnId: string) {
+    return run(
+      (s) => {
+        const a = s.asns.find((x) => x.id === asnId);
+        if (!a) return fail("ASN_NOT_FOUND");
+        const waiting = s.receipts.some(
+          (r) => r.asnId === asnId && r.qty - r.qcDone > 0,
+        );
+        if (waiting) return fail("QC_NOT_DONE");
+        a.qcApproved = true;
+        return ok(undefined);
+      },
+      { successText: { th: "อนุมัติผล QC แล้ว", en: "QC result approved" } },
+    );
+  },
+  /** Admin confirms every putaway task of the ASN is done: stock is live. */
+  completeAsnPutaway(asnId: string) {
+    return run(
+      (s) => {
+        const a = s.asns.find((x) => x.id === asnId);
+        if (!a) return fail("ASN_NOT_FOUND");
+        const lots = s.receipts.filter((r) => r.asnId === asnId);
+        const tasks = s.putaway.filter(
+          (t) =>
+            t.status !== "cancelled" &&
+            lots.some((r) => r.skuId === t.skuId && r.lotNo === t.lotNo),
+        );
+        if (tasks.length === 0 || tasks.some((t) => t.status !== "completed"))
+          return fail("PUTAWAY_NOT_DONE");
+        a.putawayApproved = true;
+        return ok(undefined);
+      },
+      { successText: { th: "ปิดงานรับสินค้าแล้ว", en: "Inbound completed" } },
+    );
   },
   closeAsn(input: Args<typeof closeAsn>) {
     return run((s, c) => closeAsn(s, c, input), {
@@ -144,7 +208,11 @@ export const actions = {
   /* --- putaway --- */
   putawayItem(input: Args<typeof putawayScanItem>) {
     return run((s, c) => putawayScanItem(s, c, input), {
-      scan: { context: "putaway-item", raw: input.raw, kind: kindOf(input.raw) },
+      scan: {
+        context: "putaway-item",
+        raw: input.raw,
+        kind: kindOf(input.raw),
+      },
     });
   },
   putawayBin(input: Args<typeof putawayScanBin>) {
@@ -168,18 +236,27 @@ export const actions = {
   unbindBin(binId: string) {
     return run((s) => unbindBin(s, binId));
   },
-  setBinFlag(binId: string, patch: { active?: boolean; labelPrinted?: boolean }) {
-    return run((s) => {
-      const b = s.bins.find((x) => x.id === binId);
-      if (b) Object.assign(b, patch);
-      return { ok: true, data: undefined };
-    }, { notifyError: false });
+  setBinFlag(
+    binId: string,
+    patch: { active?: boolean; labelPrinted?: boolean },
+  ) {
+    return run(
+      (s) => {
+        const b = s.bins.find((x) => x.id === binId);
+        if (b) Object.assign(b, patch);
+        return { ok: true, data: undefined };
+      },
+      { notifyError: false },
+    );
   },
 
   /* --- orders --- */
   syncOrders(count = 3) {
     return run((s, c) => syncOrders(s, c, { count }), {
-      successText: { th: "นำเข้าคำสั่งซื้อจากทุกช่องทางแล้ว", en: "Orders synced from all channels" },
+      successText: {
+        th: "นำเข้าคำสั่งซื้อจากทุกช่องทางแล้ว",
+        en: "Orders synced from all channels",
+      },
     });
   },
   markPaid(orderId: string) {
@@ -246,7 +323,10 @@ export const actions = {
   },
   packOverride(input: Args<typeof packSupervisorOverride>) {
     return run((s, c) => packSupervisorOverride(s, c, input), {
-      successText: { th: "หัวหน้างานอนุมัติแล้ว", en: "Supervisor override recorded" },
+      successText: {
+        th: "หัวหน้างานอนุมัติแล้ว",
+        en: "Supervisor override recorded",
+      },
     });
   },
   issueLabel(input: Args<typeof issueLabel>) {
@@ -255,7 +335,9 @@ export const actions = {
     });
   },
   closePack(sessionId: string) {
-    return run((s) => closePackSession(s, { sessionId }), { notifyError: false });
+    return run((s) => closePackSession(s, { sessionId }), {
+      notifyError: false,
+    });
   },
   reprint(shipmentId: string) {
     return run((s) => reprintLabel(s, shipmentId));
@@ -288,7 +370,10 @@ export const actions = {
   },
   signManifest(input: Args<typeof signManifest>) {
     return run((s, c) => signManifest(s, c, input), {
-      successText: { th: "ส่งมอบพัสดุแล้ว – แจ้งแพลตฟอร์มแล้ว", en: "Handed over - platforms notified" },
+      successText: {
+        th: "ส่งมอบพัสดุแล้ว – แจ้งแพลตฟอร์มแล้ว",
+        en: "Handed over - platforms notified",
+      },
     });
   },
 
@@ -311,7 +396,11 @@ export const actions = {
   },
   returnIntake(input: Args<typeof returnIntake>) {
     return run((s, c) => returnIntake(s, c, input), {
-      scan: { context: "return-intake", raw: input.raw, kind: kindOf(input.raw) },
+      scan: {
+        context: "return-intake",
+        raw: input.raw,
+        kind: kindOf(input.raw),
+      },
     });
   },
   returnItem(input: Args<typeof returnScanItem>) {
@@ -331,7 +420,11 @@ export const actions = {
   },
   restock(input: Args<typeof restockLine>) {
     return run((s, c) => restockLine(s, c, input), {
-      scan: { context: "restock", raw: input.binRaw, kind: kindOf(input.binRaw) },
+      scan: {
+        context: "restock",
+        raw: input.binRaw,
+        kind: kindOf(input.binRaw),
+      },
       silentCodes: ["WRONG_BIN"],
       successText: { th: "คืนสต็อกพร้อมขายแล้ว", en: "Restocked as sellable" },
     });

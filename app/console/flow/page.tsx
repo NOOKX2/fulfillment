@@ -36,7 +36,7 @@ const STEPS: Step[] = [
       "เปิด /console/inbound แล้วเลือกแถว ASN ที่สถานะ “รอรับ” หรือ “กำลังรับ” เพื่อเข้าหน้ารายละเอียด ASN",
       "ในกล่อง “สแกนรับสินค้า” กดแถบ “ตัวจำลองการสแกน (เดโม)” แล้วแตะชิปสินค้าเพื่อจำลองการสแกนบาร์โค้ด (หรือพิมพ์บาร์โค้ดแล้วกด Enter) ทำซ้ำจนครบจำนวน",
       "สินค้าที่ต้องระบุล็อต/วันหมดอายุ ให้กรอกแล้วกด “บันทึกและรับ”",
-      "ไปที่ /console/inbound/qc กดปุ่ม “ตรวจ QC” ที่แถวสินค้า แล้วกด “บันทึกผล QC”",
+      "ไปที่ /pda/qc (เครื่อง PDA) กดปุ่ม “ตรวจ QC” ที่การ์ดสินค้า แล้วกด “บันทึกผล QC”",
       "กลับมาที่หน้า ASN แล้วกด “ปิด ASN” (ถ้ามีส่วนต่างให้กด “รับทราบและปิด”)",
     ],
     result:
@@ -45,7 +45,7 @@ const STEPS: Step[] = [
       "ระบบสร้างงานจัดเก็บ (Putaway task) ให้อัตโนมัติ และตัวเลขใน /console/inventory เปลี่ยนจาก “รอ QC” เป็น “ขายได้” — สเต็ป 2 จะเห็นงานรอจัดเก็บ",
     links: [
       { href: "/console/inbound", label: "ไปหน้ารับสินค้า", primary: true },
-      { href: "/console/inbound/qc", label: "คิวตรวจ QC" },
+      { href: "/pda/qc", label: "คิวตรวจ QC (PDA)" },
       { href: "/console/inbound/discrepancies", label: "รายการส่วนต่าง" },
     ],
   },
@@ -164,7 +164,7 @@ const STEPS: Step[] = [
 
 const URL_MAP: { menu: string; url: string; step: number }[] = [
   { menu: "รับสินค้า", url: "/console/inbound", step: 1 },
-  { menu: "ตรวจคุณภาพ", url: "/console/inbound/qc", step: 1 },
+  { menu: "ตรวจคุณภาพ (PDA)", url: "/pda/qc", step: 1 },
   { menu: "ผังตำแหน่งจัดเก็บ", url: "/console/locations", step: 2 },
   { menu: "จัดเก็บเข้าตำแหน่ง", url: "/console/putaway", step: 2 },
   { menu: "สต็อกคงคลัง", url: "/console/inventory", step: 3 },

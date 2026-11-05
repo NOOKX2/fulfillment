@@ -9,6 +9,8 @@ export const ERROR_MESSAGES = {
   UNKNOWN_BARCODE: { th: "ไม่รู้จักบาร์โค้ดนี้", en: "Unknown barcode" },
 
   ASN_NOT_FOUND: { th: "ไม่พบ ASN", en: "ASN not found" },
+  QC_NOT_DONE: { th: "ยังตรวจ QC ไม่ครบ", en: "QC inspection is not complete" },
+  PUTAWAY_NOT_DONE: { th: "ยังจัดเก็บไม่ครบทุกงาน", en: "Putaway is not complete" },
   ASN_CLOSED: { th: "ASN นี้ปิดแล้ว", en: "This ASN is already closed" },
   NOT_ON_ASN: { th: "สินค้านี้ไม่อยู่ใน ASN", en: "Item is not on this ASN" },
   LOT_REQUIRED: { th: "ต้องระบุเลขล็อต", en: "Lot number is required" },

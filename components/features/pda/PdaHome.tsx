@@ -15,6 +15,12 @@ export function PdaHome() {
       sub: tr(`${data.asns.filter((a) => a.status === "expected" || a.status === "receiving").length} ASN ค้างรับ`, `${data.asns.filter((a) => a.status === "expected" || a.status === "receiving").length} open ASNs`),
     },
     {
+      href: "/pda/qc",
+      icon: "✔",
+      title: tr("ตรวจคุณภาพ (QC)", "Quality check (QC)"),
+      sub: tr(`${data.receipts.filter((r) => r.qty - r.qcDone > 0).length} ล็อตรอตรวจ`, `${data.receipts.filter((r) => r.qty - r.qcDone > 0).length} lots waiting`),
+    },
+    {
       href: "/pda/putaway",
       icon: "⇥",
       title: tr("จัดเก็บ", "Putaway"),
