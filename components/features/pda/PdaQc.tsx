@@ -5,16 +5,11 @@ import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
+import { ProgressBar } from "@/components/ui/Card";
 import { Dialog } from "@/components/ui/Dialog";
 import { Field, Select, Textarea } from "@/components/ui/form";
 import { Stepper } from "@/components/ui/Stepper";
-import {
-  fmtDate,
-  ProductCell,
-  QcProgress,
-  QcResult,
-  QcStatusBadge,
-} from "@/components/features/inbound/qcCells";
+import { fmtDate, QcStatusBadge } from "@/components/features/inbound/qcCells";
 import { skuLabel } from "@/lib/domain/format";
 import type { QcCheckKey, ReceiptLine } from "@/lib/domain/types";
 import { useT } from "@/lib/i18n/useT";
@@ -70,6 +65,14 @@ export function PdaQc() {
   const queue = data.receipts.filter(
     (r) =>
       r.qty - r.qcDone > 0 &&
+      approved(r.asnId) &&
+      (!asnFilter || r.asnId === asnFilter),
+  );
+  // Lots fully inspected after console approval — show at the bottom like receive-done.
+  const finished = data.receipts.filter(
+    (r) =>
+      r.qty > 0 &&
+      r.qcDone >= r.qty &&
       approved(r.asnId) &&
       (!asnFilter || r.asnId === asnFilter),
   );
@@ -158,66 +161,69 @@ export function PdaQc() {
           </Link>
         </p>
       ) : null}
-      {queue.length > 0 ? (
-        <div className="overflow-x-auto rounded-lg border border-silver-metal/50">
-          <table className="w-full min-w-[900px] border-collapse text-sm">
-            <thead className="border-b border-silver-metal/50 text-left text-xs uppercase tracking-wide text-silver-metal">
-              <tr>
-                <th className="px-3 py-2">{tr("สินค้า", "Product")}</th>
-                <th className="px-3 py-2">{tr("เลขล็อต", "Lot / Batch")}</th>
-                <th className="px-3 py-2">{tr("วันหมดอายุ", "Expiry")}</th>
-                <th className="px-3 py-2 text-right">
-                  {tr("จำนวนรับเข้า", "Received")}
-                </th>
-                <th className="px-3 py-2">
-                  {tr("ความคืบหน้าการตรวจ", "QC progress")}
-                </th>
-                <th className="px-3 py-2">{tr("ผลการตรวจ", "QC result")}</th>
-                <th className="px-3 py-2">{tr("สถานะ QC", "QC status")}</th>
-                <th className="px-3 py-2" />
-              </tr>
-            </thead>
-            <tbody>
-              {queue.map((r) => (
-                <tr
+      <ul className="space-y-3">
+        {queue.map((r) => (
+          <li key={r.id}>
+            <button
+              type="button"
+              onClick={() => openDialog(r)}
+              className="block w-full rounded-lg border border-silver-metal/50 p-4 text-left hover:border-gold"
+            >
+              <div className="mb-1 flex items-center justify-between gap-2">
+                <span className="font-bold">
+                  {skuLabel(data.skus.find((k) => k.id === r.skuId), lang)}
+                </span>
+                <QcStatusBadge r={r} data={data} tr={tr} />
+              </div>
+              <div className="mb-2 text-sm text-silver-metal">
+                {data.asns.find((a) => a.id === r.asnId)?.asnNo ?? "-"} ·{" "}
+                {tr("ล็อต", "Lot")} {r.lotNo} · {fmtDate(r.expiryDate)} · {r.qty}{" "}
+                {tr("ชิ้น", "pcs")}
+              </div>
+              <div className="mb-1 text-sm tabular-nums">
+                {r.qcDone} / {r.qty}
+              </div>
+              <ProgressBar value={r.qcDone} max={r.qty} />
+            </button>
+          </li>
+        ))}
+      </ul>
+
+      {finished.length > 0 ? (
+        <section className="mt-8" aria-labelledby="pda-qc-done">
+          <h2 id="pda-qc-done" className="mb-3 text-base font-semibold text-silver-metal">
+            {tr("ตรวจ QC สำเร็จแล้ว", "QC complete")}
+          </h2>
+          <ul className="space-y-3">
+            {finished.map((r) => {
+              const asnNo = data.asns.find((a) => a.id === r.asnId)?.asnNo ?? "-";
+              return (
+                <li
                   key={r.id}
-                  className="border-b border-silver-metal/30 align-middle"
+                  className="rounded-lg border border-success/40 bg-success/10 p-4"
                 >
-                  <td className="px-3 py-2">
-                    <ProductCell
-                      sku={data.skus.find((k) => k.id === r.skuId)}
-                      lang={lang}
-                      dark
-                    />
-                  </td>
-                  <td className="px-3 py-2 font-mono text-xs">{r.lotNo}</td>
-                  <td className="px-3 py-2">{fmtDate(r.expiryDate)}</td>
-                  <td className="px-3 py-2 text-right tabular-nums">
-                    {r.qty} {tr("ชิ้น", "pcs")}
-                  </td>
-                  <td className="px-3 py-2">
-                    <QcProgress r={r} dark />
-                  </td>
-                  <td className="px-3 py-2">
-                    <QcResult r={r} data={data} tr={tr} />
-                  </td>
-                  <td className="px-3 py-2">
-                    <QcStatusBadge r={r} data={data} tr={tr} />
-                  </td>
-                  <td className="px-3 py-2">
-                    <button
-                      type="button"
-                      onClick={() => openDialog(r)}
-                      className="min-h-11 whitespace-nowrap rounded-control bg-gold px-4 text-sm font-semibold text-ink"
-                    >
-                      {tr("ตรวจ QC", "Inspect")}
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                  <div className="mb-1 flex items-center justify-between gap-2">
+                    <span className="font-bold">
+                      {skuLabel(data.skus.find((k) => k.id === r.skuId), lang)}
+                    </span>
+                    <span className="inline-flex items-center gap-1 text-sm font-semibold text-success">
+                      <span aria-hidden className="text-base">
+                        ✓
+                      </span>
+                      {tr("ตรวจสำเร็จ", "Inspected")}
+                    </span>
+                  </div>
+                  <div className="mb-1 text-sm text-silver-metal">
+                    {asnNo} · {tr("ล็อต", "Lot")} {r.lotNo} · {fmtDate(r.expiryDate)}
+                  </div>
+                  <div className="text-sm tabular-nums text-silver-metal">
+                    {r.qcDone} / {r.qty} {tr("ชิ้น", "pcs")}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       ) : null}
 
       <Dialog

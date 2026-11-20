@@ -30,8 +30,14 @@ export function ScanInput({
   const [value, setValue] = useState("");
   const ref = useRef<HTMLInputElement>(null);
 
+  const focusField = () => {
+    // Keep the viewport where it is - PDA putaway/pick pages put the field below
+    // the current-step banner, and a normal focus would jump straight to the bottom.
+    ref.current?.focus({ preventScroll: true });
+  };
+
   useEffect(() => {
-    if (autoFocus && !disabled) ref.current?.focus();
+    if (autoFocus && !disabled) focusField();
   }, [autoFocus, disabled]);
 
   const submit = () => {
@@ -40,7 +46,7 @@ export function ScanInput({
     unlockAudio();
     onScan(raw);
     setValue("");
-    ref.current?.focus();
+    focusField();
   };
 
   return (
@@ -73,7 +79,7 @@ export function ScanInput({
             if (!pda) return;
             setTimeout(() => {
               const a = document.activeElement;
-              if (!a || a === document.body) ref.current?.focus();
+              if (!a || a === document.body) focusField();
             }, 60);
           }}
           className={`w-full rounded-control border-2 bg-white pl-14 pr-3 font-mono text-ink placeholder:font-sans placeholder:text-muted/70 disabled:bg-silver ${

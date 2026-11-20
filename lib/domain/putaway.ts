@@ -41,9 +41,10 @@ export function suggestBins(
   exclude: ID[] = [],
   limit = 3,
 ): PutawaySuggestion[] {
-  const candidates = s.bins.filter(
-    (b) => isPickableBin(b) && !exclude.includes(b.id) && binCapacityFor(s, b, sku) >= 1,
-  );
+  // Prefer bins that fit the whole qty; fall back to any bin that fits at least 1.
+  const usable = (min: number) =>
+    s.bins.filter((b) => isPickableBin(b) && !exclude.includes(b.id) && binCapacityFor(s, b, sku) >= min);
+  const candidates = usable(qty).length > 0 ? usable(qty) : usable(1);
   const seqs = s.bins.filter((b) => isPickableBin(b)).map((b) => b.pickSeq);
   const minSeq = Math.min(...seqs);
   const maxSeq = Math.max(...seqs);

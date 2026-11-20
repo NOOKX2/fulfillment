@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect } from "react";
 import { StatusPill } from "@/components/ui/Badge";
 import { PutawayFlow } from "@/components/features/putaway/PutawayFlow";
 import { skuLabel } from "@/lib/domain/format";
@@ -36,18 +37,25 @@ export function PdaPutawayList() {
 
 export function PdaPutaway({ taskId }: { taskId: string }) {
   const { tr } = useT();
-  const exists = useWms((s) => s.data.putaway.some((t) => t.id === taskId));
+  const task = useWms((s) => s.data.putaway.find((t) => t.id === taskId));
   const nextId = useWms(
     (s) => s.data.putaway.find((t) => t.id !== taskId && (t.status === "suggested" || t.status === "in_progress"))?.id,
   );
-  if (!exists) return <p>{tr("ไม่พบงาน", "Task not found")}</p>;
+  const done = task?.status === "completed" || task?.status === "cancelled";
+
+  // Open on the product + scan step, not further down the page.
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+  }, [taskId]);
+
+  if (!task) return <p>{tr("ไม่พบงาน", "Task not found")}</p>;
   return (
     <div>
       <Link href="/pda/putaway" className="mb-2 inline-block text-sm text-gold underline underline-offset-2">
         ← {tr("รายการงาน", "Task list")}
       </Link>
       <PutawayFlow taskId={taskId} pda />
-      {nextId ? (
+      {done && nextId ? (
         <Link
           href={`/pda/putaway/${nextId}`}
           className="mt-4 flex min-h-14 items-center justify-center rounded-control bg-gold text-base font-semibold text-ink"
